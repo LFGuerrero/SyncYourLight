@@ -1,6 +1,7 @@
 package com.comida.indice.syncyourlights.spotify
 
 import android.content.Context
+import android.graphics.Bitmap
 import android.util.Log
 import com.comida.indice.syncyourlights.helper.Constants
 import com.comida.indice.syncyourlights.helper.Constants.APP_TAG
@@ -8,12 +9,15 @@ import com.comida.indice.syncyourlights.helper.orElse
 import com.comida.indice.syncyourlights.interfaces.SpotifyInterface
 import com.spotify.android.appremote.api.ConnectionParams
 import com.spotify.android.appremote.api.Connector
+import com.spotify.android.appremote.api.ImagesApi
 import com.spotify.android.appremote.api.SpotifyAppRemote
+import com.spotify.protocol.types.ImageUri
 import java.lang.ref.WeakReference
 
-class SpotifyManager(callback: SpotifyInterface) {
+class SpotifyManager {
+    //todo: Create fun to detects is Spotify app is installed on device
 
-    private var listener: WeakReference<SpotifyInterface>? = WeakReference(callback)
+    private var listener: WeakReference<SpotifyInterface>? = null
 
     fun setUpListener(callback: SpotifyInterface) {
         this.listener = WeakReference(callback)
@@ -23,6 +27,22 @@ class SpotifyManager(callback: SpotifyInterface) {
         this.listener = null
     }
 
+    fun downloadAlbumCover(imagesApi: ImagesApi, imgUri: ImageUri) {
+        imagesApi.getImage(imgUri).setResultCallback { bitmap: Bitmap? ->
+            bitmap?.let {
+                listener?.let { listener ->
+                    listener.get()?.onImageDownload(bitmap)
+                }.orElse {
+                    throwListenerError("onImageDownload")
+                }
+            }.orElse {
+                listener?.let {listener ->
+                    listener.get()?.onImageError("Unable to download album cover")
+                }
+            }
+        }
+    }
+
     fun connectSpotifyRemote(context: Context) {
         SpotifyAppRemote.connect(context, setUpSpotifyConnectionParams(),
             object : Connector.ConnectionListener {
@@ -30,7 +50,7 @@ class SpotifyManager(callback: SpotifyInterface) {
                     listener?.let {
                         it.get()?.onSpotifyRemoteConnect(spotifyAppRemote)
                     }.orElse {
-                        Log.e(APP_TAG, "No listener found: ${javaClass.name}")
+                        throwListenerError("onConnect")
                     }
                 }
 
@@ -38,7 +58,7 @@ class SpotifyManager(callback: SpotifyInterface) {
                     listener?.let {
                         it.get()?.onSpotifyRemoteError(throwable.message)
                     }.orElse {
-                        Log.e(APP_TAG, "No listener found: ${javaClass.name}")
+                        throwListenerError("onFailure")
                     }
                 }
             })
@@ -49,4 +69,8 @@ class SpotifyManager(callback: SpotifyInterface) {
             .setRedirectUri(Constants.REDIRECT_URI)
             .showAuthView(true)
             .build()
+
+    private fun throwListenerError(origin: String){
+        Log.e(APP_TAG, "No $origin listener found: ${javaClass.name}")
+    }
 }

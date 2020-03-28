@@ -12,18 +12,16 @@ import android.widget.Toast.LENGTH_LONG
 import androidx.appcompat.app.AppCompatActivity
 import androidx.palette.graphics.Palette
 import com.comida.indice.syncyourlights.helper.Constants.APP_TAG
-import com.comida.indice.syncyourlights.helper.orElse
 import com.comida.indice.syncyourlights.interfaces.SpotifyInterface
 import com.comida.indice.syncyourlights.spotify.SpotifyManager
 import com.spotify.android.appremote.api.SpotifyAppRemote
-import com.spotify.protocol.types.ImageUri
 import com.spotify.protocol.types.Track
 
 class MainActivity : AppCompatActivity(), View.OnClickListener, SpotifyInterface {
 
     private lateinit var spotifyRemote: SpotifyAppRemote
     private var isGettingImage = false
-    private val spotifyManager: SpotifyManager by lazy { SpotifyManager(this) }
+    private val spotifyManager: SpotifyManager by lazy { SpotifyManager() }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -36,8 +34,8 @@ class MainActivity : AppCompatActivity(), View.OnClickListener, SpotifyInterface
         findViewById<Button>(R.id.btn_sync_hue).setOnClickListener(this)
     }
 
-    override fun onStart() {
-        super.onStart()
+    override fun onResume() {
+        super.onResume()
         spotifyManager.setUpListener(this)
     }
 
@@ -56,22 +54,10 @@ class MainActivity : AppCompatActivity(), View.OnClickListener, SpotifyInterface
             run {
                 val track: Track? = playerState.track
                 track?.let {
-                    getAlbumImage(track.imageUri)
-                }
-            }
-        }
-    }
-
-    private fun getAlbumImage(imgUri: ImageUri) {
-        if (!isGettingImage) {
-            isGettingImage = true
-            spotifyRemote.imagesApi.getImage(imgUri).setResultCallback { bitmap: Bitmap? ->
-                bitmap?.let {
-                    findViewById<ImageView>(R.id.iv_album_cover).setImageBitmap(it)
-                    getPredominantAlbumColor(it)
-                }.orElse {
-                    Toast.makeText(this, "Unable to download cover image", LENGTH_LONG).show()
-                    isGettingImage = false
+                    if (!isGettingImage) {
+                        isGettingImage = true
+                        spotifyManager.downloadAlbumCover(spotifyRemote.imagesApi, track.imageUri)
+                    }
                 }
             }
         }
@@ -119,5 +105,15 @@ class MainActivity : AppCompatActivity(), View.OnClickListener, SpotifyInterface
     override fun onNoSpotifyInstalled(message: String) {
         Toast.makeText(this, "Please, install Spotify app  to continue.", LENGTH_LONG).show()
         //todo: Create an Activity for this error
+    }
+
+    override fun onImageDownload(bitmap: Bitmap) {
+        findViewById<ImageView>(R.id.iv_album_cover).setImageBitmap(bitmap)
+        getPredominantAlbumColor(bitmap)
+    }
+
+    override fun onImageError(message: String) {
+        Toast.makeText(this, message, LENGTH_LONG).show()
+        isGettingImage = false
     }
 }
