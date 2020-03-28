@@ -1,0 +1,7 @@
+<resources>
+    <string name="app_name">SyncYourLights</string>
+    <string name="link_to_spotify">Link to Spotify</string>
+    <string name="link_to_hue">Link to Philips HUE</string>
+    <string name="sync_your_lights">Sync Your Lights!</string>
+    <string name="album_cover">album cover</string>
+</resources>
