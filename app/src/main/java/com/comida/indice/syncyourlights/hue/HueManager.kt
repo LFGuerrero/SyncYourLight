@@ -139,7 +139,14 @@ class HueManager(context: Context) : PHSDKListener {
         }
     }
 
-    override fun onConnectionResumed(p0: PHBridge?) {
-        TODO("not implemented") //To change body of created functions use File | Settings | File Templates.
+    override fun onConnectionResumed(phBridge: PHBridge?) {
+        val connectedIp = phBridge?.resourceCache?.bridgeConfiguration?.ipAddress
+        hueSdk.lastHeartbeat.put(connectedIp, System.currentTimeMillis())
+
+        hueSdk.disconnectedAccessPoint.forEachIndexed { index, phAccessPoint ->
+            if (hueSdk.disconnectedAccessPoint[index].ipAddress == phAccessPoint.ipAddress) {
+                hueSdk.disconnectedAccessPoint.removeAt(index)
+            }
+        }
     }
 }
