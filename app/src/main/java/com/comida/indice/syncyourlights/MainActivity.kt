@@ -14,14 +14,20 @@ import androidx.palette.graphics.Palette
 import com.comida.indice.syncyourlights.helper.Constants.APP_TAG
 import com.comida.indice.syncyourlights.interfaces.SpotifyInterface
 import com.comida.indice.syncyourlights.spotify.SpotifyManager
+import com.philips.lighting.hue.sdk.PHAccessPoint
+import com.philips.lighting.hue.sdk.PHHueSDK
+import com.philips.lighting.hue.sdk.PHSDKListener
+import com.philips.lighting.model.PHBridge
+import com.philips.lighting.model.PHHueParsingError
 import com.spotify.android.appremote.api.SpotifyAppRemote
 import com.spotify.protocol.types.Track
 
-class MainActivity : AppCompatActivity(), View.OnClickListener, SpotifyInterface {
+class MainActivity : AppCompatActivity(), View.OnClickListener, SpotifyInterface, PHSDKListener {
 
     private lateinit var spotifyRemote: SpotifyAppRemote
     private var isGettingImage = false
     private val spotifyManager: SpotifyManager by lazy { SpotifyManager() }
+    private val hueSdk: PHHueSDK by lazy { PHHueSDK.getInstance() }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -32,6 +38,11 @@ class MainActivity : AppCompatActivity(), View.OnClickListener, SpotifyInterface
     private fun setViews() {
         findViewById<Button>(R.id.btn_sync_spotify).setOnClickListener(this)
         findViewById<Button>(R.id.btn_sync_hue).setOnClickListener(this)
+    }
+
+    override fun onStart() {
+        super.onStart()
+        hueSdk.notificationManager.registerSDKListener(this)
     }
 
     override fun onResume() {
@@ -88,6 +99,7 @@ class MainActivity : AppCompatActivity(), View.OnClickListener, SpotifyInterface
 
     private fun removeCallbacks() {
         spotifyManager.removeListener()
+        hueSdk.notificationManager.unregisterSDKListener(this)
         if (this::spotifyRemote.isInitialized) {
             SpotifyAppRemote.disconnect(spotifyRemote)
         }
@@ -115,5 +127,37 @@ class MainActivity : AppCompatActivity(), View.OnClickListener, SpotifyInterface
     override fun onImageError(message: String) {
         Toast.makeText(this, message, LENGTH_LONG).show()
         isGettingImage = false
+    }
+
+    override fun onBridgeConnected(p0: PHBridge?, p1: String?) {
+        TODO("not implemented") //To change body of created functions use File | Settings | File Templates.
+    }
+
+    override fun onParsingErrors(p0: MutableList<PHHueParsingError>?) {
+        TODO("not implemented") //To change body of created functions use File | Settings | File Templates.
+    }
+
+    override fun onAccessPointsFound(p0: MutableList<PHAccessPoint>?) {
+        TODO("not implemented") //To change body of created functions use File | Settings | File Templates.
+    }
+
+    override fun onConnectionLost(p0: PHAccessPoint?) {
+        TODO("not implemented") //To change body of created functions use File | Settings | File Templates.
+    }
+
+    override fun onCacheUpdated(p0: MutableList<Int>?, p1: PHBridge?) {
+        TODO("not implemented") //To change body of created functions use File | Settings | File Templates.
+    }
+
+    override fun onAuthenticationRequired(p0: PHAccessPoint?) {
+        TODO("not implemented") //To change body of created functions use File | Settings | File Templates.
+    }
+
+    override fun onError(p0: Int, p1: String?) {
+        TODO("not implemented") //To change body of created functions use File | Settings | File Templates.
+    }
+
+    override fun onConnectionResumed(p0: PHBridge?) {
+        TODO("not implemented") //To change body of created functions use File | Settings | File Templates.
     }
 }
