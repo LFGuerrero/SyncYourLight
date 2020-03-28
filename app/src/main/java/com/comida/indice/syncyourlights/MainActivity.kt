@@ -7,20 +7,23 @@ import android.view.View
 import android.widget.Button
 import android.widget.ImageView
 import android.widget.TextView
+import android.widget.Toast
+import android.widget.Toast.LENGTH_LONG
 import androidx.appcompat.app.AppCompatActivity
 import androidx.palette.graphics.Palette
-import com.comida.indice.syncyourlights.helper.Constants.CLIENT_ID
-import com.comida.indice.syncyourlights.helper.Constants.REDIRECT_URI
-import com.spotify.android.appremote.api.ConnectionParams
-import com.spotify.android.appremote.api.Connector.ConnectionListener
+import com.comida.indice.syncyourlights.helper.Constants.APP_TAG
+import com.comida.indice.syncyourlights.helper.orElse
+import com.comida.indice.syncyourlights.interfaces.SpotifyInterface
+import com.comida.indice.syncyourlights.spotify.SpotifyManager
 import com.spotify.android.appremote.api.SpotifyAppRemote
 import com.spotify.protocol.types.ImageUri
 import com.spotify.protocol.types.Track
 
-class MainActivity : AppCompatActivity(), View.OnClickListener {
+class MainActivity : AppCompatActivity(), View.OnClickListener, SpotifyInterface {
 
     private lateinit var spotifyRemote: SpotifyAppRemote
     private var isGettingImage = false
+    private val spotifyManager: SpotifyManager by lazy { SpotifyManager(this) }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -33,6 +36,11 @@ class MainActivity : AppCompatActivity(), View.OnClickListener {
         findViewById<Button>(R.id.btn_sync_hue).setOnClickListener(this)
     }
 
+    override fun onStart() {
+        super.onStart()
+        spotifyManager.setUpListener(this)
+    }
+
     override fun onStop() {
         super.onStop()
         removeCallbacks()
@@ -41,26 +49,6 @@ class MainActivity : AppCompatActivity(), View.OnClickListener {
     override fun onDestroy() {
         super.onDestroy()
         removeCallbacks()
-    }
-
-    private fun setUpSpotifyConnectionParams() =
-        ConnectionParams.Builder(CLIENT_ID)
-            .setRedirectUri(REDIRECT_URI)
-            .showAuthView(true)
-            .build()
-
-    private fun connectSpotifyRemote() {
-        SpotifyAppRemote.connect(this, setUpSpotifyConnectionParams(),
-            object : ConnectionListener {
-                override fun onConnected(spotifyAppRemote: SpotifyAppRemote) {
-                    spotifyRemote = spotifyAppRemote
-                    setUpSpotifyListener()
-                }
-
-                override fun onFailure(throwable: Throwable) {
-                    Log.e("MainActivity", throwable.message, throwable)
-                }
-            })
     }
 
     private fun setUpSpotifyListener() {
@@ -81,6 +69,9 @@ class MainActivity : AppCompatActivity(), View.OnClickListener {
                 bitmap?.let {
                     findViewById<ImageView>(R.id.iv_album_cover).setImageBitmap(it)
                     getPredominantAlbumColor(it)
+                }.orElse {
+                    Toast.makeText(this, "Unable to download cover image", LENGTH_LONG).show()
+                    isGettingImage = false
                 }
             }
         }
@@ -101,7 +92,7 @@ class MainActivity : AppCompatActivity(), View.OnClickListener {
     override fun onClick(view: View) {
         when (view.id) {
             R.id.btn_sync_spotify -> {
-                connectSpotifyRemote()
+                spotifyManager.connectSpotifyRemote(this)
             }
             R.id.btn_sync_hue -> {
 
@@ -110,8 +101,23 @@ class MainActivity : AppCompatActivity(), View.OnClickListener {
     }
 
     private fun removeCallbacks() {
+        spotifyManager.removeListener()
         if (this::spotifyRemote.isInitialized) {
             SpotifyAppRemote.disconnect(spotifyRemote)
         }
+    }
+
+    override fun onSpotifyRemoteConnect(spotifyAppRemote: SpotifyAppRemote) {
+        spotifyRemote = spotifyAppRemote
+        setUpSpotifyListener()
+    }
+
+    override fun onSpotifyRemoteError(message: String?) {
+        Log.e(APP_TAG, message ?: "Error")
+    }
+
+    override fun onNoSpotifyInstalled(message: String) {
+        Toast.makeText(this, "Please, install Spotify app  to continue.", LENGTH_LONG).show()
+        //todo: Create an Activity for this error
     }
 }
