@@ -13,7 +13,7 @@ import androidx.appcompat.app.AppCompatActivity
 import androidx.palette.graphics.Palette
 import com.comida.indice.syncyourlights.helper.Constants.APP_TAG
 import com.comida.indice.syncyourlights.interfaces.SpotifyInterface
-import com.comida.indice.syncyourlights.spotify.SpotifyManager
+import com.comida.indice.syncyourlights.spotify.SpotifyViewModel
 import com.philips.lighting.hue.sdk.PHAccessPoint
 import com.philips.lighting.hue.sdk.PHHueSDK
 import com.philips.lighting.hue.sdk.PHSDKListener
@@ -26,7 +26,7 @@ class MainActivity : AppCompatActivity(), View.OnClickListener, SpotifyInterface
 
     private lateinit var spotifyRemote: SpotifyAppRemote
     private var isGettingImage = false
-    private val spotifyManager: SpotifyManager by lazy { SpotifyManager() }
+    private val spotifyManager: SpotifyViewModel by lazy { SpotifyViewModel() }
     private val hueSdk: PHHueSDK by lazy { PHHueSDK.getInstance() }
 
     override fun onCreate(savedInstanceState: Bundle?) {

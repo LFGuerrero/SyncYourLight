@@ -3,6 +3,9 @@ package com.comida.indice.syncyourlights.spotify
 import android.content.Context
 import android.graphics.Bitmap
 import android.util.Log
+import androidx.lifecycle.LiveData
+import androidx.lifecycle.MutableLiveData
+import androidx.lifecycle.ViewModel
 import com.comida.indice.syncyourlights.helper.Constants
 import com.comida.indice.syncyourlights.helper.Constants.APP_TAG
 import com.comida.indice.syncyourlights.helper.orElse
@@ -13,11 +16,27 @@ import com.spotify.android.appremote.api.ImagesApi
 import com.spotify.android.appremote.api.SpotifyAppRemote
 import com.spotify.protocol.types.ImageUri
 import java.lang.ref.WeakReference
+import java.net.URI
 
-class SpotifyManager {
+class SpotifyViewModel : ViewModel() {
     //todo: Create fun to detects is Spotify app is installed on device
 
     private var listener: WeakReference<SpotifyInterface>? = null
+
+    private val states: MutableLiveData<SpotifyVMStates> = MutableLiveData()
+
+    val state: LiveData<SpotifyVMStates> = states
+
+    fun interpreter(interpreter: SpotifyInterpreter) {
+        when (interpreter){
+            is SpotifyInterpreter.ConnectSpotify -> {
+                connectSpotifyRemote(context = interpreter.context)
+            }
+            is SpotifyInterpreter.DownloadAlbumCover -> {
+
+            }
+        }
+    }
 
     fun setUpListener(callback: SpotifyInterface) {
         this.listener = WeakReference(callback)
@@ -73,4 +92,9 @@ class SpotifyManager {
     private fun throwListenerError(origin: String){
         Log.e(APP_TAG, "No $origin listener found: ${javaClass.name}")
     }
+}
+
+sealed class SpotifyInterpreter{
+    data class ConnectSpotify(val context: Context) : SpotifyInterpreter()
+    data class DownloadAlbumCover(val uri: URI) : SpotifyInterpreter()
 }
